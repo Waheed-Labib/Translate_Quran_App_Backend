@@ -1,37 +1,41 @@
-import express from "express";
+import dotenv from "dotenv";
+import connectDB from "./db/connectDB.js";
+import { app } from "./app.js";
 
-const app = express();
-
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    next();
+dotenv.config({
+    path: './.env'
 })
 
-const port = process.env.PORT || 3000;
+connectDB()
+    .then(() => {
+        app.on("error", (error) => {
+            console.log("Error: ", error)
+            throw error
+        })
+        app.listen(process.env.PORT || 8000, () => {
+            console.log(`Server is running at port:`, process.env.PORT)
+        })
+    })
+    .catch((error) => {
+        console.log('MongoDB Connection Failed !', error)
+    })
 
-const fakeData = [
-    {
-        id: 1,
-        content: 'fake data 1'
-    },
-    {
-        id: 2,
-        content: 'fake data 2'
-    },
-    {
-        id: 3,
-        content: 'fake data 3'
-    },
-]
 
-app.get('/', (req, res) => {
-    res.send('Translate Quran Server running ...')
-})
 
-app.get('/data', (req, res) => {
-    res.send(fakeData)
-})
 
-app.listen(port, () => {
-    console.log(`Server running on Port: `, port)
-})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
