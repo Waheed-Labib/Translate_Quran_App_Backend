@@ -20,6 +20,22 @@ connectDB()
         console.log('MongoDB Connection Failed !', error)
     })
 
+// app.get('/data', (req, res) => {
+//     res.send([
+//         {
+//             id: 1,
+//             content: 'data 1'
+//         },
+//         {
+//             id: 2,
+//             content: 'data 2'
+//         },
+//         {
+//             id: 3,
+//             content: 'data 3'
+//         },
+//     ])
+// })
 
 
 
