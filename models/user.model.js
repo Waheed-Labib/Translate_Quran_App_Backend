@@ -1,4 +1,5 @@
-import mongoose, { mongo, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import bcrypt from 'bcrypt';
 
 const userSchema = new Schema(
     {
@@ -18,6 +19,9 @@ const userSchema = new Schema(
         password: {
             type: String,
             required: [true, 'Password is required']
+        },
+        refreshToken: {
+            type: String
         }
     },
     {
