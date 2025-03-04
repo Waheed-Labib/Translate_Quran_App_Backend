@@ -1,3 +1,4 @@
+import { emailPattern, passwordPattern } from "../constants.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -17,10 +18,13 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // email address validation
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (!emailPattern.test(email)) {
         throw new ApiError(400, 'Email address not valid')
+    }
+
+    // password validation
+    if (!passwordPattern.test(password)) {
+        throw new ApiError(400, 'Password must be 8 characters long')
     }
 
     // step 3: check if user already exists: username, email
