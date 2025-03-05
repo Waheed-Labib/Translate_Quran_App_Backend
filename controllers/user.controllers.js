@@ -1,8 +1,19 @@
-import { emailPattern, passwordPattern } from "../constants.js";
+import { emailPattern, passwordPattern, cookieOptions } from "../constants.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+
+const generateAccessAndRefreshToken = async (userId) => {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+}
 
 const registerUser = asyncHandler(async (req, res) => {
 
@@ -63,6 +74,55 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 })
 
+const loginUser = asyncHandler(async (req, res) => {
+    // step 1: get email and password from req.body
+    const { email, password } = req.body;
+
+    // step 2: throw error if not found
+    if (!email && !password) {
+        throw new ApiError(400, 'Both email and password are required')
+    }
+
+    // step 3: find the user from DB with email
+    const user = await User.findOne({ email })
+
+    if (!user) {
+        throw new ApiError(400, 'User does not exist')
+    }
+
+    // step 4: validate password
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, 'Invalid credentials')
+    }
+
+    // step 5: generate access and refresh token
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+
+    // step 6: get logged in user from DB to send it as response. 
+    // You should avoid DB call here, if it affects performance
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+    // step 7: return response with cookies
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(
+            new ApiResponse(
+                201,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken
+                },
+                'Login Successful'
+            )
+        )
+})
+
 export {
-    registerUser
+    registerUser,
+    loginUser
 }
