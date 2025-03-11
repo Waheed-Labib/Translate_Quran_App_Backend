@@ -5,7 +5,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { sendResetEmail } from "../utils/passwordResetEmail.js";
+import { sendVerficationEmail } from "../utils/verificationEmail.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     const user = await User.findById(userId);
@@ -54,16 +56,26 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(408, "This fullName already exists")
     }
 
-    // step 4: create user object - create entry in db
+    // step 4: generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedVerificationToken = await bcrypt.hash(verificationToken, 10);
+
+    // step 5: create user object - create entry in db
     const user = await User.create({
         fullName,
         email,
-        password
+        password,
+        verificationToken: hashedVerificationToken
     })
+
+    // step 6: create jwt token and send email
+    const encodedToken = jwt.sign({ email, verificationToken }, process.env.EMAIL_VERIFICATION_TOKEN_SECRET);
+
+    sendVerficationEmail(email, encodedToken);
 
     // step 5: remove password and refresh token field from response
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken -passwordResetToken -passwordResetTokenExpiry"
+        "-password -refreshToken -verificationToken -passwordResetToken -passwordResetTokenExpiry"
     );
 
     // step 6: check for user creation
@@ -80,7 +92,7 @@ const registerUser = asyncHandler(async (req, res) => {
         .cookie('accessToken', accessToken, cookieOptions)
         .cookie('refreshToken', refreshToken, cookieOptions)
         .json(
-            new ApiResponse(200, createdUser, 'User Registered Successfully')
+            new ApiResponse(200, createdUser, 'User Registered Successfully. Check Email to verify.')
         )
 })
 
@@ -209,6 +221,49 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 })
 
+const verifyEmail = asyncHandler(async (req, res) => {
+
+    // step 1: get the token from req query
+    const { token: encodedVerificationToken } = req.query;
+
+    if (!encodedVerificationToken) {
+        throw new ApiError(400, 'Unauthorized request')
+    }
+
+    // step 2: decode the token
+    const { email, verificationToken } = jwt.verify(encodedVerificationToken, process.env.EMAIL_VERIFICATION_TOKEN_SECRET);
+
+    // step 3: Find user with the email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        throw new ApiError(400, "User not found")
+    }
+
+    // step 4: verify the token with DB
+    const isTokenCorrect = bcrypt.compare(verificationToken, user.verificationToken);
+
+    if (!isTokenCorrect) {
+        throw new ApiError(400, "Unauthorized access")
+    }
+
+    // step 5: Mark user as verified
+    user.isVerified = true;
+    user.verificationToken = undefined; // Remove token after verification
+    await user.save({ validateBeforeSave: false });
+
+    // step 6: return response
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                201,
+                {},
+                "User verification successful"
+            )
+        )
+})
+
 const sendResetPasswordLink = asyncHandler(async (req, res) => {
 
     // step 1: get email from req.body
@@ -320,7 +375,8 @@ export {
     logoutUser,
     refreshAccessToken,
     sendResetPasswordLink,
-    resetPassword
+    resetPassword,
+    verifyEmail
 }
 
 

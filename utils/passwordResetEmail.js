@@ -1,13 +1,5 @@
-import nodemailer from "nodemailer";
 import { ApiError } from "./ApiError.js";
-
-const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+import { transporter } from "./transporter.js";
 
 export const sendResetEmail = async (userEmail, resetToken) => {
     const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
