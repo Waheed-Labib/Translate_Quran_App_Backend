@@ -53,7 +53,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const userWithSamefullName = await User.findOne({ fullName })
 
     if (userWithSamefullName) {
-        throw new ApiError(408, "This fullName already exists")
+        throw new ApiError(408, "We do not allow duplicate fullnames. Please try a small change or a short extension.")
     }
 
     // step 4: generate verification token
