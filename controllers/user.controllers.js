@@ -124,7 +124,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     // step 6: get logged in user from DB to send it as response. 
     // You should avoid DB call here, if it affects performance
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -passwordResetToken -passwordResetTokenExpiry");
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -verificationToken -passwordResetToken -passwordResetTokenExpiry");
 
     // step 7: return response with cookies
     return res

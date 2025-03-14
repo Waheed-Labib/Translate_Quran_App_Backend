@@ -1,26 +1,22 @@
 import { Translation } from "../models/translation.model.js";
+import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getTranslation = asyncHandler(async (req, res) => {
-    const { translatorId, verse_key } = req.query;
+    const { verse_key } = req.query;
 
-    const translation = await Translation.findOne({
-        translator: translatorId,
-        verse_key
+    const translations = await Translation.find({
+        verse_key: verse_key
     })
-
-    if (!translation) {
-        throw new ApiError(400, "Translation not found")
-    }
 
     return res
         .status(200)
         .json(
             new ApiResponse(
                 201,
-                translation,
+                translations,
                 "Get translation successful"
             )
         )
@@ -28,15 +24,21 @@ const getTranslation = asyncHandler(async (req, res) => {
 
 const addTranslation = asyncHandler(async (req, res) => {
 
-    const { translatorId, verse_key, language, content } = req.body;
+    const { translatorId, translatorName, verse_key, language, content } = req.body;
     const user = req.user;
 
     if (user._id.toString() !== translatorId) {
         throw new ApiError(403, "Unauthorized access")
     }
 
+    const idMatchesName = user.fullName === translatorName;
+
+    if (!idMatchesName) {
+        throw new ApiError(400, "Unauthorized Access.")
+    }
+
     const alreadyExists = await Translation.findOne({
-        translator: translatorId,
+        translatorId: translatorId,
         verse_key
     })
 
@@ -45,7 +47,8 @@ const addTranslation = asyncHandler(async (req, res) => {
     }
 
     const translation = await Translation.create({
-        translator: translatorId,
+        translatorId,
+        translatorName,
         verse_key,
         language,
         content
@@ -63,7 +66,7 @@ const addTranslation = asyncHandler(async (req, res) => {
 })
 
 const editTranslation = asyncHandler(async (req, res) => {
-    const { translatorId, translationId, verse_key, language, content } = req.body;
+    const { translatorId, translatorName, translationId, verse_key, language, content } = req.body;
     const user = req.user;
 
     if (user._id.toString() !== translatorId) {
@@ -72,7 +75,7 @@ const editTranslation = asyncHandler(async (req, res) => {
 
     const translation = await Translation.findById(translationId);
 
-    if (!translation || translatorId !== translation.translator.toString() || verse_key !== translation.verse_key) {
+    if (!translation || translatorId !== translation.translatorId.toString() || translatorName !== translation.translatorName.toString() || verse_key !== translation.verse_key) {
         throw new ApiError(400, "Translation not found")
     }
 

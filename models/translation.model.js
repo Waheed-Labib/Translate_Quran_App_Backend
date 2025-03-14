@@ -11,10 +11,17 @@ const translationSchema = new Schema(
             type: String,
             required: [true, 'Language is required']
         },
-        translator: {
+        translatorId: {
             type: Schema.Types.ObjectId,
-            ref: "User"
+            ref: "User",
+            required: true
         },
+
+        translatorName: {
+            type: String,
+            required: true
+        },
+
         verse_key: {
             type: String,
             required: [true, 'Verse_key is required']
