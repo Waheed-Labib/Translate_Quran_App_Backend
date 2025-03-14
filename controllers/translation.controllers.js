@@ -24,7 +24,7 @@ const getTranslation = asyncHandler(async (req, res) => {
 
 const addTranslation = asyncHandler(async (req, res) => {
 
-    const { translatorId, translatorName, verse_key, language, content } = req.body;
+    const { translatorId, translatorName, verse_key, content } = req.body;
     const user = req.user;
 
     if (user._id.toString() !== translatorId) {
@@ -50,7 +50,6 @@ const addTranslation = asyncHandler(async (req, res) => {
         translatorId,
         translatorName,
         verse_key,
-        language,
         content
     })
 
@@ -66,7 +65,7 @@ const addTranslation = asyncHandler(async (req, res) => {
 })
 
 const editTranslation = asyncHandler(async (req, res) => {
-    const { translatorId, translatorName, translationId, verse_key, language, content } = req.body;
+    const { translatorId, translatorName, translationId, verse_key, content } = req.body;
     const user = req.user;
 
     if (user._id.toString() !== translatorId) {
@@ -79,7 +78,6 @@ const editTranslation = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Translation not found")
     }
 
-    translation.language = language;
     translation.content = content;
 
     await translation.save();

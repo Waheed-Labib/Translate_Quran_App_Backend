@@ -7,10 +7,6 @@ const translationSchema = new Schema(
             required: [true, 'Content is required'],
             trim: true
         },
-        language: {
-            type: String,
-            required: [true, 'Language is required']
-        },
         translatorId: {
             type: Schema.Types.ObjectId,
             ref: "User",
